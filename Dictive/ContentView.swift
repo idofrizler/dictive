@@ -1,97 +1,423 @@
 //
 //  ContentView.swift
-//  Tap Game
+//  Dictive
 //
 //  Created by Ido Frizler on 21/02/2026.
 //
 
 import SwiftUI
+import Combine
 
 struct ContentView: View {
-    @State private var game = TapGame()
-    @State private var feedback = "Pick a color and pop matching bubbles!"
+    @StateObject private var session = TapGameSession()
+    private let portalGradient = LinearGradient(
+        colors: [Color(red: 0.11, green: 0.10, blue: 0.22), Color(red: 0.28, green: 0.16, blue: 0.40), Color(red: 0.93, green: 0.42, blue: 0.36)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
 
-    private let palette: [Color] = [.pink, .blue, .green, .orange, .purple, .yellow]
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Game Portal")
+                        .font(.largeTitle)
+                        .bold()
+                        .foregroundStyle(.white)
+                    Text("Dictive")
+                        .font(.largeTitle)
+                        .bold()
+                        .foregroundStyle(.white)
+                    Text("Play ad-free mini-games in a polished portal experience.")
+                        .foregroundStyle(.white.opacity(0.82))
+
+                    VStack(spacing: 12) {
+                        NavigationLink {
+                            BubbleColoringGameView(session: session)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "paintpalette.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 12))
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Magic Bubble Coloring")
+                                        .font(.title3)
+                                        .bold()
+                                        .foregroundStyle(.white)
+                                    Text("Choose a drawing, then color by tap or drag to reveal it.")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.white.opacity(0.82))
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right.circle.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundStyle(.white.opacity(0.9))
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                            .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 18))
+                        }
+                        .buttonStyle(.plain)
+
+                        portalComingSoonCard
+                    }
+                }
+                .padding()
+            }
+            .background(portalGradient.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            .tint(.white)
+        }
+    }
+
+    private var portalComingSoonCard: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "sparkles.rectangle.stack.fill")
+                .font(.system(size: 24))
+                .foregroundStyle(.white.opacity(0.85))
+                .frame(width: 44, height: 44)
+                .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+            VStack(alignment: .leading, spacing: 6) {
+                Text("More Games Coming Soon")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Text("Card-based portal is ready for the next mini-game modules.")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            Spacer()
+        }
+        .padding()
+        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 18))
+    }
+}
+
+private struct BubbleColoringGameView: View {
+    enum GalleryFilter: String, CaseIterable, Identifiable {
+        case all = "All"
+        case inProgress = "In Progress"
+        case notStarted = "Not Started"
+        case completed = "Completed"
+
+        var id: String { rawValue }
+    }
+
+    @ObservedObject var session: TapGameSession
+    @State private var lastDragCellID: UUID?
+    @State private var galleryFilter: GalleryFilter = .all
+
+    private let palette: [Color] = [.pink, .blue, .green, .orange, .purple, .yellow, .red, .teal]
+    private let paletteColumns = [GridItem(.adaptive(minimum: 68, maximum: 82), spacing: 12)]
+    private let gameGradient = LinearGradient(
+        colors: [Color(red: 0.09, green: 0.11, blue: 0.20), Color(red: 0.15, green: 0.24, blue: 0.36), Color(red: 0.80, green: 0.33, blue: 0.49)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                Text("Magic Bubble Coloring").font(.largeTitle).bold()
-                Text("Score \(game.score)  •  Streak \(game.streak)")
-                    .font(.headline)
-                ProgressView(value: game.completion).tint(.mint)
-                Text("\(game.paintedCount)/\(game.totalCount) bubbles done")
-                    .font(.subheadline)
-                Text(feedback)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                HStack(spacing: 10) {
-                    ForEach(Array(palette.enumerated()), id: \.offset) { index, color in
-                        Button {
-                            game.selectColor(index)
-                            feedback = "Color \(index + 1) selected."
-                        } label: {
-                            VStack(spacing: 4) {
-                                Circle()
-                                    .fill(color)
-                                    .frame(width: 42, height: 42)
-                                    .overlay {
-                                        if game.selectedColorIndex == index {
-                                            Circle().stroke(.white, lineWidth: 3)
-                                        }
-                                    }
-                                Text("\(game.remainingCount(for: index))")
-                                    .font(.caption2)
-                            }
-                        }
-                    }
-                }
-
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 5), spacing: 10) {
-                    ForEach(game.cells) { cell in
-                        Button {
-                            let result = game.tapCell(cell.id)
-                            switch result {
-                            case .match:
-                                feedback = "Nice! Keep going!"
-                            case .mismatch:
-                                feedback = "Try a different color for this bubble."
-                            case .alreadyPainted:
-                                feedback = "That bubble is already done."
-                            }
-                        } label: {
-                            Circle()
-                                .fill(cell.isPainted ? palette[cell.targetColorIndex] : .white.opacity(0.92))
-                                .frame(height: 54)
-                                .overlay {
-                                    if !cell.isPainted {
-                                        Text("\(cell.targetColorIndex + 1)")
-                                            .font(.caption)
-                                            .foregroundStyle(.gray)
-                                    }
-                                }
-                                .shadow(color: .black.opacity(0.08), radius: 3, y: 2)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-
-                if game.isCompleted {
-                    Text("Board complete!").font(.title2).bold()
-                    Button("New Board") {
-                        game.newBoard()
-                        feedback = "New board ready!"
-                    }
-                    .buttonStyle(.borderedProminent)
+                if session.game.currentDrawingID == nil {
+                    gallerySection
+                } else {
+                    drawingSection
                 }
             }
             .padding()
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
         }
-        .background(
-            LinearGradient(colors: [.mint.opacity(0.2), .cyan.opacity(0.25)], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
-        )
+        .background(gameGradient.ignoresSafeArea())
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(session.game.currentDrawingID != nil)
+        .toolbar {
+            if session.game.currentDrawingID != nil {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        session.game.leaveDrawing()
+                        session.feedback = "Pick another drawing."
+                    } label: {
+                        Image(systemName: "chevron.left")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Reset") {
+                        session.game.resetCurrentDrawing()
+                        session.feedback = "Drawing reset. Start coloring again!"
+                    }
+                }
+            }
+        }
+    }
+
+    private var gallerySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Magic Bubble Coloring")
+                .font(.largeTitle)
+                .bold()
+                .foregroundStyle(.white)
+            Text("Pick a drawing. In-progress drawings keep your painted pixels.")
+                .foregroundStyle(.white.opacity(0.82))
+
+            HStack {
+                Text("Gallery")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Spacer()
+                Menu {
+                    ForEach(GalleryFilter.allCases) { filter in
+                        Button(filter.rawValue) {
+                            galleryFilter = filter
+                        }
+                    }
+                } label: {
+                    Label(galleryFilter.rawValue, systemImage: "line.3.horizontal.decrease.circle")
+                        .foregroundStyle(.white)
+                }
+            }
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 156, maximum: 220), spacing: 12)], spacing: 12) {
+                ForEach(filteredGalleryItems) { item in
+                    Button {
+                        session.game.selectDrawing(item.id)
+                        session.feedback = "Drawing loaded: \(item.name)."
+                    } label: {
+                        VStack(alignment: .leading, spacing: 8) {
+                            PixelThumbnailView(
+                                cells: item.cells,
+                                width: item.width,
+                                height: item.height,
+                                palette: palette
+                            )
+                            .frame(height: 110)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                            Text(item.name)
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+                            Text("\(Int(item.completion * 100))% complete")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(item.isCompleted ? "Completed" : (item.isInProgress ? "In progress" : "Not started"))
+                                .font(.caption2.bold())
+                                .foregroundStyle(item.isCompleted ? .green : (item.isInProgress ? .blue : .clear))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                        .background(.white.opacity(0.82), in: RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private var drawingSection: some View {
+        VStack(spacing: 14) {
+            Text(session.game.currentDrawingName)
+                .font(.largeTitle)
+                .bold()
+                .foregroundStyle(.white)
+
+            HStack(spacing: 8) {
+                ProgressView(value: session.game.completion)
+                    .tint(.mint)
+                Text("\(session.game.paintedCount)/\(session.game.totalCount)")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.88))
+            }
+
+            Text(session.feedback)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.85))
+                .multilineTextAlignment(.center)
+
+            LazyVGrid(columns: paletteColumns, spacing: 12) {
+                ForEach(session.game.availableColorIndices, id: \.self) { index in
+                    let color = palette[index]
+                    Button {
+                        session.game.selectColor(index)
+                        session.feedback = "Color \(index + 1) selected."
+                    } label: {
+                        VStack(spacing: 6) {
+                            Circle()
+                                .fill(color)
+                                .frame(width: 42, height: 42)
+                                .overlay {
+                                    if session.game.selectedColorIndex == index {
+                                        Circle().stroke(.white, lineWidth: 4)
+                                        Circle().stroke(.black.opacity(0.22), lineWidth: 1)
+                                    }
+                                }
+                            Text("\(session.game.remainingCount(for: index)) left")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .background(.white.opacity(session.game.selectedColorIndex == index ? 0.95 : 0.72), in: RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            boardView
+                .background(.white.opacity(0.65), in: RoundedRectangle(cornerRadius: 12))
+
+            if session.game.isCompleted {
+                Text("Finished: \(session.game.currentDrawingName)!")
+                    .font(.title3)
+                    .bold()
+            }
+        }
+    }
+
+    private var filteredGalleryItems: [DrawingGalleryItem] {
+        switch galleryFilter {
+        case .all:
+            return session.game.galleryItems
+        case .inProgress:
+            return session.game.galleryItems.filter(\.isInProgress)
+        case .notStarted:
+            return session.game.galleryItems.filter { $0.completion == 0 }
+        case .completed:
+            return session.game.galleryItems.filter(\.isCompleted)
+        }
+    }
+
+    private var boardView: some View {
+        GeometryReader { proxy in
+            let boardWidth = proxy.size.width
+            let width = max(1, session.game.currentGridWidth)
+            let height = max(1, session.game.currentGridHeight)
+            let cellSize = boardWidth / CGFloat(width)
+            let columns = Array(repeating: GridItem(.fixed(cellSize), spacing: 0), count: width)
+
+            LazyVGrid(columns: columns, spacing: 0) {
+                ForEach(session.game.cells) { cell in
+                    Rectangle()
+                        .fill(cellFill(for: cell))
+                        .frame(width: cellSize, height: cellSize)
+                        .overlay {
+                            if !cell.isPainted {
+                                Text("\(cell.targetColorIndex + 1)")
+                                    .font(.system(size: max(7, cellSize * 0.25), weight: .semibold))
+                                    .foregroundStyle(cell.targetColorIndex == session.game.selectedColorIndex ? .primary : .secondary)
+                            }
+                        }
+                        .overlay {
+                            Rectangle()
+                                .stroke(.black.opacity(0.08), lineWidth: 0.5)
+                        }
+                }
+            }
+            .frame(width: boardWidth, height: cellSize * CGFloat(height), alignment: .topLeading)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        handlePaint(at: value.location, boardWidth: boardWidth, cellSize: cellSize)
+                    }
+                    .onEnded { _ in
+                        lastDragCellID = nil
+                    }
+            )
+        }
+        .aspectRatio(CGFloat(max(1, session.game.currentGridWidth)) / CGFloat(max(1, session.game.currentGridHeight)), contentMode: .fit)
+    }
+
+    private func cellFill(for cell: BubbleCell) -> Color {
+        if cell.isPainted {
+            return palette[cell.targetColorIndex]
+        }
+
+        if cell.targetColorIndex == session.game.selectedColorIndex {
+            return palette[cell.targetColorIndex].opacity(0.24)
+        }
+
+        return .white.opacity(0.94)
+    }
+
+    private func handlePaint(at location: CGPoint, boardWidth: CGFloat, cellSize: CGFloat) {
+        let width = session.game.currentGridWidth
+        let height = session.game.currentGridHeight
+        guard width > 0, height > 0, boardWidth > 0, cellSize > 0 else { return }
+
+        let col = Int(location.x / cellSize)
+        let row = Int(location.y / cellSize)
+        let index = row * width + col
+
+        guard col >= 0, col < width, row >= 0, row < height, index < session.game.cells.count else { return }
+
+        let cellID = session.game.cells[index].id
+        guard lastDragCellID != cellID else { return }
+        lastDragCellID = cellID
+
+        let result = session.game.tapCell(cellID)
+        switch result {
+        case .match:
+            session.feedback = "Nice! Keep going!"
+        case .mismatch:
+            session.feedback = "Try the highlighted color targets."
+        case .alreadyPainted:
+            break
+        }
+    }
+
+}
+
+final class TapGameSession: ObservableObject {
+    @Published var game: TapGame {
+        didSet { persist() }
+    }
+    @Published var feedback: String {
+        didSet { persist() }
+    }
+
+    private let gameKey = "dictive.tapgame.state"
+    private let feedbackKey = "dictive.tapgame.feedback"
+
+    init() {
+        let defaults = UserDefaults.standard
+        if let data = defaults.data(forKey: gameKey),
+           let decoded = try? JSONDecoder().decode(TapGame.self, from: data) {
+            game = decoded
+        } else {
+            game = TapGame()
+        }
+        feedback = defaults.string(forKey: feedbackKey) ?? "Pick a drawing from the gallery."
+    }
+
+    private func persist() {
+        let defaults = UserDefaults.standard
+        if let encoded = try? JSONEncoder().encode(game) {
+            defaults.set(encoded, forKey: gameKey)
+        }
+        defaults.set(feedback, forKey: feedbackKey)
+    }
+}
+
+private struct PixelThumbnailView: View {
+    let cells: [BubbleCell]
+    let width: Int
+    let height: Int
+    let palette: [Color]
+
+    var body: some View {
+        GeometryReader { proxy in
+            let cellSize = min(proxy.size.width / CGFloat(max(1, width)), proxy.size.height / CGFloat(max(1, height)))
+            let columns = Array(repeating: GridItem(.fixed(cellSize), spacing: 0), count: max(1, width))
+
+            LazyVGrid(columns: columns, spacing: 0) {
+                ForEach(cells) { cell in
+                    Rectangle()
+                        .fill(cell.isPainted ? palette[cell.targetColorIndex] : Color.white.opacity(0.85))
+                        .frame(width: cellSize, height: cellSize)
+                }
+            }
+        }
     }
 }
 
