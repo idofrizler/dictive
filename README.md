@@ -34,3 +34,22 @@ scripts/dev.sh
 2. Add a card/route in `ContentView`.
 3. Add logic assertions in `Tests/`.
 4. Run both validation commands before sharing.
+
+## Generating better drawing templates from images
+Use the image pixelation helper to convert real source art into palette-mapped `DrawingTemplate` data.
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install pillow
+.venv/bin/python scripts/pixelate_template.py path/to/image.png --id dolphin --name Dolphin --width 15 --height 15 --mode tonal --buckets 6
+```
+
+You can send output directly to a file:
+
+```bash
+.venv/bin/python scripts/pixelate_template.py path/to/image.png --id dolphin --name Dolphin --mode fixed --palette-size 16 --output /tmp/dolphin.swift
+```
+
+## Gallery image source (free to use)
+Current gallery templates were generated from [OpenMoji](https://openmoji.org/) icons (CC BY-SA 4.0).  
+Source files are stored under `Assets/source-images/`.

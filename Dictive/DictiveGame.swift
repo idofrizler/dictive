@@ -27,6 +27,8 @@ struct DrawingGalleryItem: Identifiable {
 }
 
 struct TapGame: Codable {
+    static let persistenceVersion = 2
+
     struct DrawingTemplate: Codable {
         let id: String
         let name: String
@@ -103,7 +105,7 @@ struct TapGame: Codable {
         }
     }
 
-    init(paletteCount: Int = 8) {
+    init(paletteCount: Int = 32) {
         self.paletteCount = paletteCount
         self.selectedColorIndex = 0
         self.currentDrawingID = nil
@@ -202,36 +204,6 @@ struct TapGame: Codable {
         })
     }
 
-    private static func makeCanvas(width: Int, height: Int, fill: Int) -> [Int] {
-        Array(repeating: fill, count: width * height)
-    }
-
-    private static func setPixel(_ colors: inout [Int], width: Int, height: Int, x: Int, y: Int, color: Int) {
-        guard x >= 0, y >= 0, x < width, y < height else { return }
-        colors[(y * width) + x] = color
-    }
-
-    private static func fillRect(_ colors: inout [Int], width: Int, height: Int, xRange: ClosedRange<Int>, yRange: ClosedRange<Int>, color: Int) {
-        for y in yRange {
-            for x in xRange {
-                setPixel(&colors, width: width, height: height, x: x, y: y, color: color)
-            }
-        }
-    }
-
-    private static func fillCircle(_ colors: inout [Int], width: Int, height: Int, centerX: Int, centerY: Int, radius: Int, color: Int) {
-        let radiusSq = radius * radius
-        for y in (centerY - radius)...(centerY + radius) {
-            for x in (centerX - radius)...(centerX + radius) {
-                let dx = x - centerX
-                let dy = y - centerY
-                if (dx * dx) + (dy * dy) <= radiusSq {
-                    setPixel(&colors, width: width, height: height, x: x, y: y, color: color)
-                }
-            }
-        }
-    }
-
     private static func upscaled(_ template: DrawingTemplate, factor: Int) -> DrawingTemplate {
         guard factor > 1 else { return template }
         let upscaledWidth = template.width * factor
@@ -260,117 +232,196 @@ struct TapGame: Codable {
         )
     }
 
-    private static func makeSmiley() -> DrawingTemplate {
-        let width = 15
-        let height = 15
-        var colors = makeCanvas(width: width, height: height, fill: 7)
-        fillCircle(&colors, width: width, height: height, centerX: 7, centerY: 7, radius: 6, color: 3)
-        fillCircle(&colors, width: width, height: height, centerX: 5, centerY: 5, radius: 1, color: 0)
-        fillCircle(&colors, width: width, height: height, centerX: 9, centerY: 5, radius: 1, color: 0)
-        fillRect(&colors, width: width, height: height, xRange: 4...10, yRange: 9...10, color: 6)
-        fillRect(&colors, width: width, height: height, xRange: 5...9, yRange: 8...8, color: 3)
-
-        return DrawingTemplate(id: "smiley", name: "Smiley", width: width, height: height, colors: colors)
-    }
-
-    private static func makeRocket() -> DrawingTemplate {
-        let width = 15
-        let height = 15
-        var colors = makeCanvas(width: width, height: height, fill: 7)
-        fillRect(&colors, width: width, height: height, xRange: 6...8, yRange: 3...11, color: 4)
-        fillRect(&colors, width: width, height: height, xRange: 5...9, yRange: 4...9, color: 4)
-        fillRect(&colors, width: width, height: height, xRange: 5...9, yRange: 10...11, color: 2)
-        fillCircle(&colors, width: width, height: height, centerX: 7, centerY: 6, radius: 1, color: 0)
-        fillRect(&colors, width: width, height: height, xRange: 4...5, yRange: 8...10, color: 1)
-        fillRect(&colors, width: width, height: height, xRange: 9...10, yRange: 8...10, color: 1)
-        fillRect(&colors, width: width, height: height, xRange: 6...8, yRange: 12...13, color: 6)
-
-        return DrawingTemplate(id: "rocket", name: "Rocket", width: width, height: height, colors: colors)
-    }
-
-    private static func makeHeart() -> DrawingTemplate {
-        let width = 15
-        let height = 15
-        var colors = makeCanvas(width: width, height: height, fill: 7)
-
-        fillCircle(&colors, width: width, height: height, centerX: 5, centerY: 5, radius: 3, color: 0)
-        fillCircle(&colors, width: width, height: height, centerX: 9, centerY: 5, radius: 3, color: 0)
-        fillRect(&colors, width: width, height: height, xRange: 4...10, yRange: 6...8, color: 0)
-        fillRect(&colors, width: width, height: height, xRange: 5...9, yRange: 9...10, color: 0)
-        fillRect(&colors, width: width, height: height, xRange: 6...8, yRange: 11...11, color: 0)
-        fillRect(&colors, width: width, height: height, xRange: 7...7, yRange: 12...12, color: 0)
-
-        return DrawingTemplate(id: "heart", name: "Heart", width: width, height: height, colors: colors)
-    }
-
-    private static func makeStar() -> DrawingTemplate {
-        let width = 15
-        let height = 15
-        var colors = makeCanvas(width: width, height: height, fill: 7)
-
-        fillRect(&colors, width: width, height: height, xRange: 6...8, yRange: 3...11, color: 3)
-        fillRect(&colors, width: width, height: height, xRange: 3...11, yRange: 6...8, color: 3)
-        fillRect(&colors, width: width, height: height, xRange: 4...10, yRange: 4...10, color: 3)
-        fillCircle(&colors, width: width, height: height, centerX: 7, centerY: 7, radius: 1, color: 6)
-
-        return DrawingTemplate(id: "star", name: "Star", width: width, height: height, colors: colors)
-    }
-
-    private static func makeFlower() -> DrawingTemplate {
-        let width = 15
-        let height = 15
-        var colors = makeCanvas(width: width, height: height, fill: 7)
-
-        fillCircle(&colors, width: width, height: height, centerX: 7, centerY: 7, radius: 2, color: 3)
-        fillCircle(&colors, width: width, height: height, centerX: 7, centerY: 3, radius: 2, color: 0)
-        fillCircle(&colors, width: width, height: height, centerX: 11, centerY: 7, radius: 2, color: 6)
-        fillCircle(&colors, width: width, height: height, centerX: 7, centerY: 11, radius: 2, color: 0)
-        fillCircle(&colors, width: width, height: height, centerX: 3, centerY: 7, radius: 2, color: 6)
-        fillRect(&colors, width: width, height: height, xRange: 7...7, yRange: 9...14, color: 2)
-
-        return DrawingTemplate(id: "flower", name: "Flower", width: width, height: height, colors: colors)
-    }
-
-    private static func makeFish() -> DrawingTemplate {
-        let width = 15
-        let height = 15
-        var colors = makeCanvas(width: width, height: height, fill: 7)
-
-        fillRect(&colors, width: width, height: height, xRange: 4...10, yRange: 5...9, color: 6)
-        fillCircle(&colors, width: width, height: height, centerX: 10, centerY: 7, radius: 2, color: 6)
-        fillRect(&colors, width: width, height: height, xRange: 2...4, yRange: 6...8, color: 3)
-        fillRect(&colors, width: width, height: height, xRange: 6...8, yRange: 4...4, color: 2)
-        fillCircle(&colors, width: width, height: height, centerX: 11, centerY: 6, radius: 0, color: 0)
-
-        return DrawingTemplate(id: "fish", name: "Fish", width: width, height: height, colors: colors)
-    }
-
-    private static func makeHouse() -> DrawingTemplate {
-        let width = 15
-        let height = 15
-        var colors = makeCanvas(width: width, height: height, fill: 7)
-
-        fillRect(&colors, width: width, height: height, xRange: 4...10, yRange: 6...12, color: 5)
-        for y in 3...6 {
-            fillRect(&colors, width: width, height: height, xRange: (7 - (y - 3))...(7 + (y - 3)), yRange: y...y, color: 0)
+// Used palette indexes: 2:green, 3:orange, 4:purple, 5:yellow, 6:red, 7:teal
+private static func makeSmiley() -> DrawingTemplate {
+            let width = 15
+            let height = 15
+            let colors = [
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 4, 4, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 4, 3, 5, 5, 5, 3, 4, 7, 7, 7, 7,
+                7, 7, 7, 4, 3, 5, 5, 5, 5, 5, 3, 4, 7, 7, 7,
+                7, 7, 7, 3, 5, 3, 3, 5, 3, 3, 5, 3, 7, 7, 7,
+                7, 7, 4, 5, 5, 2, 2, 5, 2, 2, 5, 5, 4, 7, 7,
+                7, 7, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 7, 7,
+                7, 7, 4, 5, 3, 5, 5, 5, 5, 5, 3, 5, 4, 7, 7,
+                7, 7, 7, 3, 2, 2, 2, 2, 2, 2, 2, 3, 7, 7, 7,
+                7, 7, 7, 4, 3, 6, 6, 6, 6, 6, 3, 4, 7, 7, 7,
+                7, 7, 7, 7, 4, 3, 3, 3, 3, 3, 4, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 4, 4, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+            ]
+            return DrawingTemplate(id: "smiley", name: "Smiley", width: width, height: height, colors: colors)
         }
-        fillRect(&colors, width: width, height: height, xRange: 6...8, yRange: 9...12, color: 2)
-        fillRect(&colors, width: width, height: height, xRange: 5...5, yRange: 8...8, color: 1)
-        fillRect(&colors, width: width, height: height, xRange: 9...9, yRange: 8...8, color: 6)
 
-        return DrawingTemplate(id: "house", name: "House", width: width, height: height, colors: colors)
-    }
+// Used palette indexes: 0:pink, 2:green, 3:orange, 4:purple, 5:yellow, 6:red, 7:teal
+private static func makeRocket() -> DrawingTemplate {
+            let width = 15
+            let height = 15
+            let colors = [
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 4, 4, 0, 4, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6, 0, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 6, 6, 4, 7, 6, 4, 7, 7,
+                7, 7, 7, 7, 7, 7, 6, 6, 6, 4, 4, 6, 4, 7, 7,
+                7, 7, 7, 7, 2, 2, 6, 6, 6, 6, 6, 6, 7, 7, 7,
+                7, 7, 4, 2, 7, 2, 6, 2, 6, 6, 6, 7, 7, 7, 7,
+                7, 7, 7, 4, 2, 2, 2, 6, 6, 6, 7, 7, 7, 7, 7,
+                7, 7, 7, 4, 2, 2, 2, 2, 2, 7, 7, 7, 7, 7, 7,
+                7, 7, 4, 3, 5, 3, 2, 7, 2, 7, 7, 7, 7, 7, 7,
+                7, 7, 2, 5, 3, 4, 4, 2, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 4, 2, 4, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+            ]
+            return DrawingTemplate(id: "rocket", name: "Rocket", width: width, height: height, colors: colors)
+        }
 
-    private static func makeTree() -> DrawingTemplate {
-        let width = 15
-        let height = 15
-        var colors = makeCanvas(width: width, height: height, fill: 7)
+// Used palette indexes: 2:green, 4:purple, 6:red, 7:teal
+private static func makeHeart() -> DrawingTemplate {
+            let width = 15
+            let height = 15
+            let colors = [
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 4, 4, 4, 7, 4, 4, 4, 7, 7, 7, 7,
+                7, 7, 7, 6, 6, 6, 6, 2, 6, 6, 6, 6, 7, 7, 7,
+                7, 7, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6, 4, 7, 7,
+                7, 7, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6, 4, 7, 7,
+                7, 7, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6, 4, 7, 7,
+                7, 7, 7, 4, 6, 6, 6, 6, 6, 6, 6, 4, 7, 7, 7,
+                7, 7, 7, 7, 2, 6, 6, 6, 6, 6, 2, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 6, 6, 6, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 6, 4, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+            ]
+            return DrawingTemplate(id: "heart", name: "Heart", width: width, height: height, colors: colors)
+        }
 
-        fillRect(&colors, width: width, height: height, xRange: 6...8, yRange: 9...13, color: 1)
-        fillCircle(&colors, width: width, height: height, centerX: 7, centerY: 6, radius: 4, color: 2)
-        fillCircle(&colors, width: width, height: height, centerX: 5, centerY: 7, radius: 2, color: 6)
-        fillCircle(&colors, width: width, height: height, centerX: 9, centerY: 7, radius: 2, color: 2)
+// Used palette indexes: 2:green, 3:orange, 4:purple, 5:yellow, 7:teal
+private static func makeStar() -> DrawingTemplate {
+            let width = 15
+            let height = 15
+            let colors = [
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 2, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 3, 4, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 2, 5, 2, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 4, 2, 5, 5, 5, 2, 4, 7, 7, 7, 7,
+                7, 7, 2, 3, 5, 5, 5, 5, 5, 5, 5, 3, 2, 7, 7,
+                7, 7, 7, 3, 5, 5, 5, 5, 5, 5, 5, 3, 7, 7, 7,
+                7, 7, 7, 7, 2, 5, 5, 5, 5, 5, 2, 7, 7, 7, 7,
+                7, 7, 7, 7, 2, 5, 5, 5, 5, 5, 2, 7, 7, 7, 7,
+                7, 7, 7, 7, 2, 5, 5, 5, 5, 5, 2, 7, 7, 7, 7,
+                7, 7, 7, 7, 3, 5, 2, 4, 2, 5, 3, 7, 7, 7, 7,
+                7, 7, 7, 7, 2, 4, 7, 7, 7, 4, 2, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+            ]
+            return DrawingTemplate(id: "star", name: "Star", width: width, height: height, colors: colors)
+        }
 
-        return DrawingTemplate(id: "tree", name: "Tree", width: width, height: height, colors: colors)
-    }
+// Used palette indexes: 0:pink, 2:green, 4:purple, 7:teal
+private static func makeFlower() -> DrawingTemplate {
+            let width = 15
+            let height = 15
+            let colors = [
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 2, 4, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 4, 4, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 4, 4, 2, 4, 4, 2, 4, 4, 7, 7, 7,
+                7, 7, 7, 7, 2, 4, 4, 2, 2, 4, 4, 2, 7, 7, 7,
+                7, 7, 7, 2, 4, 2, 4, 2, 0, 4, 2, 7, 7, 7, 7,
+                7, 7, 4, 2, 2, 2, 4, 4, 4, 4, 4, 7, 7, 7, 7,
+                7, 7, 7, 2, 2, 4, 4, 2, 2, 4, 0, 7, 7, 7, 7,
+                7, 7, 7, 4, 2, 2, 4, 4, 7, 4, 4, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+            ]
+            return DrawingTemplate(id: "flower", name: "Flower", width: width, height: height, colors: colors)
+        }
+
+// Used palette indexes: 2:green, 4:purple, 7:teal
+private static func makeFish() -> DrawingTemplate {
+            let width = 15
+            let height = 15
+            let colors = [
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 2, 7, 2, 7, 7, 7, 7, 7,
+                7, 7, 4, 2, 4, 7, 4, 2, 7, 7, 2, 4, 7, 7, 7,
+                7, 7, 2, 7, 2, 4, 2, 7, 7, 7, 7, 7, 2, 7, 7,
+                7, 7, 4, 7, 7, 2, 7, 7, 2, 7, 7, 7, 7, 4, 7,
+                7, 7, 4, 2, 7, 7, 7, 7, 7, 7, 7, 7, 2, 4, 7,
+                7, 7, 2, 7, 7, 2, 7, 7, 7, 7, 7, 7, 2, 7, 7,
+                7, 7, 2, 7, 2, 7, 4, 2, 7, 7, 7, 2, 4, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 2, 7, 2, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 4, 4, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+            ]
+            return DrawingTemplate(id: "fish", name: "Fish", width: width, height: height, colors: colors)
+        }
+
+// Used palette indexes: 2:green, 4:purple, 6:red, 7:teal
+private static func makeHouse() -> DrawingTemplate {
+            let width = 15
+            let height = 15
+            let colors = [
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 2, 2, 6, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 4, 6, 6, 6, 6, 6, 4, 7, 7, 7, 7,
+                7, 7, 7, 7, 2, 6, 6, 6, 6, 6, 2, 7, 7, 7, 7,
+                7, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7, 4, 7, 7, 7,
+                7, 7, 7, 4, 4, 2, 2, 4, 4, 2, 4, 7, 7, 7, 7,
+                7, 7, 7, 4, 4, 2, 6, 4, 2, 2, 4, 7, 7, 7, 7,
+                7, 7, 7, 4, 4, 2, 6, 4, 7, 7, 7, 4, 7, 7, 7,
+                7, 7, 7, 7, 2, 2, 2, 2, 4, 4, 2, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+            ]
+            return DrawingTemplate(id: "house", name: "House", width: width, height: height, colors: colors)
+        }
+
+// Used palette indexes: 2:green, 3:orange, 4:purple, 5:yellow, 7:teal
+private static func makeTree() -> DrawingTemplate {
+            let width = 15
+            let height = 15
+            let colors = [
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 4, 4, 2, 4, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 2, 2, 5, 5, 2, 2, 7, 7, 7, 7, 7,
+                7, 7, 7, 4, 2, 5, 5, 5, 5, 5, 2, 2, 4, 7, 7,
+                7, 7, 7, 2, 5, 5, 5, 5, 5, 5, 5, 5, 2, 7, 7,
+                7, 7, 4, 2, 5, 5, 5, 5, 5, 5, 5, 5, 3, 4, 7,
+                7, 7, 2, 5, 5, 5, 5, 5, 2, 2, 5, 5, 2, 7, 7,
+                7, 7, 2, 5, 5, 5, 5, 2, 2, 2, 2, 2, 7, 7, 7,
+                7, 7, 4, 2, 2, 2, 2, 2, 2, 2, 2, 4, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 4, 2, 4, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 2, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+            ]
+            return DrawingTemplate(id: "tree", name: "Tree", width: width, height: height, colors: colors)
+        }
+
 }

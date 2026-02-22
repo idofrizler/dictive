@@ -108,7 +108,6 @@ private struct BubbleColoringGameView: View {
     @State private var lastDragCellID: UUID?
     @State private var galleryFilter: GalleryFilter = .all
 
-    private let palette: [Color] = [.pink, .blue, .green, .orange, .purple, .yellow, .red, .teal]
     private let paletteColumns = [GridItem(.adaptive(minimum: 68, maximum: 82), spacing: 12)]
     private let gameGradient = LinearGradient(
         colors: [Color(red: 0.09, green: 0.11, blue: 0.20), Color(red: 0.15, green: 0.24, blue: 0.36), Color(red: 0.80, green: 0.33, blue: 0.49)],
@@ -189,7 +188,7 @@ private struct BubbleColoringGameView: View {
                                 cells: item.cells,
                                 width: item.width,
                                 height: item.height,
-                                palette: palette
+                                palette: thumbnailPalette(for: item)
                             )
                             .frame(height: 110)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -235,8 +234,8 @@ private struct BubbleColoringGameView: View {
                 .multilineTextAlignment(.center)
 
             LazyVGrid(columns: paletteColumns, spacing: 12) {
-                ForEach(session.game.availableColorIndices, id: \.self) { index in
-                    let color = palette[index]
+                ForEach(sortedAvailableColorIndices, id: \.self) { index in
+                    let color = colorForIndex(index)
                     Button {
                         session.game.selectColor(index)
                         session.feedback = "Color \(index + 1) selected."
@@ -287,6 +286,97 @@ private struct BubbleColoringGameView: View {
         }
     }
 
+    private var sortedAvailableColorIndices: [Int] {
+        session.game.availableColorIndices.sorted()
+    }
+
+    private func colorForIndex(_ index: Int) -> Color {
+        colorForIndex(index, drawingID: session.game.currentDrawingID)
+    }
+
+    private func colorForIndex(_ index: Int, drawingID: String?) -> Color {
+        paletteMap(for: drawingID)[index] ?? rgb(210, 210, 210)
+    }
+
+    private func thumbnailPalette(for item: DrawingGalleryItem) -> [Color] {
+        let indices = Array(Set(item.cells.map(\.targetColorIndex))).sorted()
+        let maxIndex = max(indices.max() ?? 0, 0)
+        var palette = Array(repeating: rgb(210, 210, 210), count: maxIndex + 1)
+        for index in indices {
+            palette[index] = colorForIndex(index, drawingID: item.id)
+        }
+        return palette
+    }
+
+    private func paletteMap(for drawingID: String?) -> [Int: Color] {
+        switch drawingID {
+        case "smiley":
+            return [
+                2: rgb(252, 252, 252),
+                3: rgb(250, 168, 37),
+                4: rgb(20, 20, 20),
+                5: rgb(250, 230, 45),
+                6: rgb(238, 88, 66),
+                7: rgb(251, 251, 252)
+            ]
+        case "rocket":
+            return [
+                0: rgb(255, 105, 180),
+                2: rgb(122, 181, 164),
+                3: rgb(243, 194, 66),
+                4: rgb(34, 34, 34),
+                5: rgb(255, 233, 64),
+                6: rgb(222, 88, 72),
+                7: rgb(249, 250, 251)
+            ]
+        case "heart":
+            return [
+                2: rgb(255, 237, 239),
+                4: rgb(158, 45, 60),
+                6: rgb(232, 86, 72),
+                7: rgb(252, 252, 252)
+            ]
+        case "star":
+            return [
+                2: rgb(255, 244, 176),
+                3: rgb(247, 197, 67),
+                4: rgb(34, 34, 34),
+                5: rgb(248, 224, 56),
+                7: rgb(250, 250, 251)
+            ]
+        case "flower":
+            return [
+                0: rgb(242, 108, 167),
+                2: rgb(120, 168, 87),
+                4: rgb(194, 98, 171),
+                7: rgb(252, 252, 252)
+            ]
+        case "fish":
+            return [
+                2: rgb(69, 163, 205),
+                4: rgb(35, 35, 35),
+                7: rgb(228, 241, 246)
+            ]
+        case "house":
+            return [
+                2: rgb(145, 97, 66),
+                4: rgb(78, 78, 82),
+                6: rgb(209, 84, 64),
+                7: rgb(249, 250, 250)
+            ]
+        case "tree":
+            return [
+                2: rgb(95, 140, 55),
+                3: rgb(138, 167, 37),
+                4: rgb(122, 82, 52),
+                5: rgb(170, 201, 58),
+                7: rgb(251, 251, 251)
+            ]
+        default:
+            return [:]
+        }
+    }
+
     private var boardView: some View {
         GeometryReader { proxy in
             let boardWidth = proxy.size.width
@@ -330,11 +420,11 @@ private struct BubbleColoringGameView: View {
 
     private func cellFill(for cell: BubbleCell) -> Color {
         if cell.isPainted {
-            return palette[cell.targetColorIndex]
+            return colorForIndex(cell.targetColorIndex)
         }
 
         if cell.targetColorIndex == session.game.selectedColorIndex {
-            return palette[cell.targetColorIndex].opacity(0.24)
+            return colorForIndex(cell.targetColorIndex).opacity(0.24)
         }
 
         return .white.opacity(0.94)
@@ -378,14 +468,18 @@ final class TapGameSession: ObservableObject {
 
     private let gameKey = "dictive.tapgame.state"
     private let feedbackKey = "dictive.tapgame.feedback"
+    private let stateVersionKey = "dictive.tapgame.stateVersion"
 
     init() {
         let defaults = UserDefaults.standard
-        if let data = defaults.data(forKey: gameKey),
+        let savedVersion = defaults.integer(forKey: stateVersionKey)
+        if savedVersion == TapGame.persistenceVersion,
+           let data = defaults.data(forKey: gameKey),
            let decoded = try? JSONDecoder().decode(TapGame.self, from: data) {
             game = decoded
         } else {
             game = TapGame()
+            defaults.set(TapGame.persistenceVersion, forKey: stateVersionKey)
         }
         feedback = defaults.string(forKey: feedbackKey) ?? "Pick a drawing from the gallery."
     }
@@ -395,6 +489,7 @@ final class TapGameSession: ObservableObject {
         if let encoded = try? JSONEncoder().encode(game) {
             defaults.set(encoded, forKey: gameKey)
         }
+        defaults.set(TapGame.persistenceVersion, forKey: stateVersionKey)
         defaults.set(feedback, forKey: feedbackKey)
     }
 }
@@ -419,6 +514,10 @@ private struct PixelThumbnailView: View {
             }
         }
     }
+}
+
+private func rgb(_ r: Double, _ g: Double, _ b: Double) -> Color {
+    Color(red: r / 255.0, green: g / 255.0, blue: b / 255.0)
 }
 
 #Preview {
