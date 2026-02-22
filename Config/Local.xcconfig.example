@@ -1,0 +1,3 @@
+// Copy this file to Local.xcconfig (untracked) and set your personal values.
+DICTIVE_DEVELOPMENT_TEAM = YOUR_TEAM_ID
+DICTIVE_BUNDLE_IDENTIFIER = com.yourname.Dictive

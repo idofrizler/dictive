@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		EB73B6A52F4A024D000C875F /* Dictive.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Dictive.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0FFEEA12F4A024D000C875F /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
+		C0FFEEA22F4A024D000C875F /* Local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig.example; sourceTree = "<group>"; };
+		EB73B6A52F4A024D000C875F /* Dictive.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Dictive.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -33,8 +35,18 @@
 			isa = PBXGroup;
 			children = (
 				EB73B6A72F4A024D000C875F /* Dictive */,
+				C0FFEEA32F4A024D000C875F /* Config */,
 				EB73B6A62F4A024D000C875F /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		C0FFEEA32F4A024D000C875F /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				C0FFEEA12F4A024D000C875F /* Shared.xcconfig */,
+				C0FFEEA22F4A024D000C875F /* Local.xcconfig.example */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		EB73B6A62F4A024D000C875F /* Products */ = {
@@ -241,11 +253,13 @@
 		};
 		EB73B6B12F4A024E000C875F /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C0FFEEA12F4A024D000C875F /* Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "$(DICTIVE_DEVELOPMENT_TEAM)";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -265,7 +279,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.idofrizler.Dictive";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DICTIVE_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -283,11 +297,13 @@
 		};
 		EB73B6B22F4A024E000C875F /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C0FFEEA12F4A024D000C875F /* Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "$(DICTIVE_DEVELOPMENT_TEAM)";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -307,7 +323,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.idofrizler.Dictive";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DICTIVE_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;

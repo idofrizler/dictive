@@ -3,10 +3,17 @@ set -euo pipefail
 
 PROJECT="Dictive.xcodeproj"
 SCHEME="Dictive"
-BUNDLE_ID="com.idofrizler.Dictive"
+BUNDLE_ID="${BUNDLE_ID:-com.example.Dictive}"
 SIMULATOR_NAME="${SIMULATOR_NAME:-iPad (A16)}"
 DERIVED_DATA="${DERIVED_DATA:-/tmp/dictive-dev-derived}"
 WATCH_PATHS=(Dictive Tests)
+
+if [[ -f Config/Local.xcconfig ]]; then
+  local_bundle_id="$(grep -E '^DICTIVE_BUNDLE_IDENTIFIER' Config/Local.xcconfig | tail -n 1 | cut -d '=' -f2- | xargs || true)"
+  if [[ -n "$local_bundle_id" ]]; then
+    BUNDLE_ID="$local_bundle_id"
+  fi
+fi
 
 usage() {
   cat <<USAGE

@@ -20,6 +20,17 @@ scripts/test.sh
 xcodebuild -project Dictive.xcodeproj -scheme Dictive -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
 ```
 
+## Local signing config (recommended)
+Use a local, untracked config so each developer keeps their own team/bundle ID:
+
+```bash
+cp Config/Local.xcconfig.example Config/Local.xcconfig
+```
+
+Then edit:
+- `DICTIVE_DEVELOPMENT_TEAM`
+- `DICTIVE_BUNDLE_IDENTIFIER`
+
 ## Fast local dev loop
 ```bash
 scripts/dev.sh

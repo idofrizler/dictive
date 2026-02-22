@@ -1,0 +1,5 @@
+// Shared defaults for all contributors.
+DICTIVE_DEVELOPMENT_TEAM =
+DICTIVE_BUNDLE_IDENTIFIER = com.example.Dictive
+
+#include? "Local.xcconfig"

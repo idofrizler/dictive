@@ -12,3 +12,6 @@ xcuserdata/
 
 # Python tooling
 .venv/
+
+# Local signing overrides
+Config/Local.xcconfig
