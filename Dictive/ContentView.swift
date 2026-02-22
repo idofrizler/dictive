@@ -61,7 +61,34 @@ struct ContentView: View {
                         }
                         .buttonStyle(.plain)
 
-                        portalComingSoonCard
+                        NavigationLink {
+                            MemoryPairsGameView()
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "square.grid.2x2.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 12))
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Animal Memory Match")
+                                        .font(.title3)
+                                        .bold()
+                                        .foregroundStyle(.white)
+                                    Text("Flip cards to find pairs in a calm, kid-friendly memory game.")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.white.opacity(0.82))
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right.circle.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundStyle(.white.opacity(0.9))
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                            .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 18))
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding()
@@ -70,27 +97,6 @@ struct ContentView: View {
             .toolbar(.hidden, for: .navigationBar)
             .tint(.white)
         }
-    }
-
-    private var portalComingSoonCard: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "sparkles.rectangle.stack.fill")
-                .font(.system(size: 24))
-                .foregroundStyle(.white.opacity(0.85))
-                .frame(width: 44, height: 44)
-                .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
-            VStack(alignment: .leading, spacing: 6) {
-                Text("More Games Coming Soon")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Text("Card-based portal is ready for the next mini-game modules.")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.8))
-            }
-            Spacer()
-        }
-        .padding()
-        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 18))
     }
 }
 

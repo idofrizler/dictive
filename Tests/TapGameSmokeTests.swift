@@ -11,6 +11,11 @@ struct TapGameSmokeTests {
         testProgressPersistsAcrossGalleryNavigation()
         testColorSelectionResetsBetweenDrawings()
         testEraseAndResetDrawing()
+        testMemoryPairsInitialState()
+        testMemoryPairsBoardSize()
+        testMemoryPairsMatchFlow()
+        testMemoryPairsMismatchFlow()
+        testMemoryPairsResetRotatesSymbols()
         print("TapGame smoke tests passed")
     }
 
@@ -151,5 +156,72 @@ struct TapGameSmokeTests {
         precondition(game.paintedCount == 0, "Reset should clear drawing")
         precondition(game.score == 0, "Reset should clear score")
         precondition(game.streak == 0, "Reset should clear streak")
+    }
+
+    private static func testMemoryPairsInitialState() {
+        let game = MemoryPairsGame(pairCount: 4, shuffleSeed: 7)
+        precondition(game.cards.count == 8, "Expected two cards per pair")
+        precondition(game.matchCount == 0, "Expected no matches initially")
+        precondition(game.moveCount == 0, "Expected no moves initially")
+    }
+
+    private static func testMemoryPairsBoardSize() {
+        let small = MemoryPairsGame(pairCount: 6, shuffleSeed: 2)
+        let medium = MemoryPairsGame(pairCount: 12, shuffleSeed: 2)
+        let large = MemoryPairsGame(pairCount: 18, shuffleSeed: 2)
+
+        precondition(small.cards.count == 12, "Small board should have 12 cards")
+        precondition(medium.cards.count == 24, "Medium board should have 24 cards")
+        precondition(large.cards.count == 36, "Large board should have 36 cards")
+    }
+
+    private static func testMemoryPairsMatchFlow() {
+        var game = MemoryPairsGame(pairCount: 4, shuffleSeed: 5)
+        guard let (first, second) = firstMatchingPair(in: game.cards) else {
+            preconditionFailure("Expected matching pair")
+        }
+
+        precondition(game.tapCard(first.id) == .firstReveal, "Expected first reveal")
+        precondition(game.tapCard(second.id) == .match, "Expected successful match")
+        precondition(game.matchCount == 1, "Expected one matched pair")
+        precondition(game.moveCount == 1, "Expected one move after pair compare")
+    }
+
+    private static func testMemoryPairsMismatchFlow() {
+        var game = MemoryPairsGame(pairCount: 4, shuffleSeed: 5)
+        guard let first = game.cards.first,
+              let second = game.cards.first(where: { $0.id != first.id && $0.symbol != first.symbol }) else {
+            preconditionFailure("Expected two non-matching cards")
+        }
+
+        precondition(game.tapCard(first.id) == .firstReveal, "Expected first reveal")
+        precondition(game.tapCard(second.id) == .mismatch, "Expected mismatch")
+        precondition(game.mismatchCount == 1, "Expected mismatch count increment")
+
+        guard let third = game.cards.first(where: { !$0.isFaceUp && !$0.isMatched }) else {
+            preconditionFailure("Expected hidden card after mismatch resolve")
+        }
+        _ = game.tapCard(third.id)
+        let stillFaceUp = game.cards.filter { $0.isFaceUp && !$0.isMatched }
+        precondition(stillFaceUp.count <= 1, "Pending mismatch should resolve before next reveal")
+    }
+
+    private static func testMemoryPairsResetRotatesSymbols() {
+        var game = MemoryPairsGame(pairCount: 6, symbols: MemoryPairsGame.defaultSymbols, selectionSeed: 1, shuffleSeed: 1)
+        let firstSet = Set(game.cards.map(\.symbol))
+
+        game.reset(pairCount: 6, symbols: MemoryPairsGame.defaultSymbols, selectionSeed: 2, shuffleSeed: 3)
+        let secondSet = Set(game.cards.map(\.symbol))
+
+        precondition(firstSet != secondSet, "Expected icon set to refresh between games")
+    }
+
+    private static func firstMatchingPair(in cards: [MemoryCard]) -> (MemoryCard, MemoryCard)? {
+        for card in cards {
+            if let match = cards.first(where: { $0.id != card.id && $0.symbol == card.symbol }) {
+                return (card, match)
+            }
+        }
+        return nil
     }
 }
