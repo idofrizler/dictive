@@ -1,10 +1,12 @@
 # Dictive
 
-Dictive is a SwiftUI iOS app portal for mini-games, starting with **Mini-game #1: Magic Bubble Coloring**.
+Dictive is a SwiftUI iOS app portal for mini-games, with **Mini-game #1: Magic Bubble Coloring** and **Mini-game #2: Animal Memory Match**.
 
 ## Project layout
 - `Dictive/ContentView.swift` – portal shell + mini-game navigation.
 - `Dictive/DictiveGame.swift` – game model/state logic.
+- `Dictive/MemoryPairsGame.swift` – memory-match model/state logic.
+- `Dictive/MemoryPairsGameView.swift` – memory-match SwiftUI game screen.
 - `Dictive/DictiveApp.swift` – app entrypoint.
 - `Tests/TapGameSmokeTests.swift` – fast executable logic tests.
 - `.github/skills/` + `.github/subagents/` – agent workflow playbooks.
