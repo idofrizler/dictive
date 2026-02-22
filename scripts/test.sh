@@ -2,5 +2,5 @@
 set -euo pipefail
 
 TMP_BIN="/tmp/dictive_tapgame_tests"
-swiftc Dictive/DictiveGame.swift Dictive/MemoryPairsGame.swift Tests/TapGameSmokeTests.swift -o "$TMP_BIN"
+swiftc Dictive/DictiveGame.swift Dictive/MemoryPairsGame.swift Dictive/NumberSprintGame.swift Tests/TapGameSmokeTests.swift -o "$TMP_BIN"
 "$TMP_BIN"

@@ -89,6 +89,35 @@ struct ContentView: View {
                             .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 18))
                         }
                         .buttonStyle(.plain)
+
+                        NavigationLink {
+                            NumberSprintGameView()
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "function")
+                                    .font(.system(size: 24))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 12))
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Number Trail")
+                                        .font(.title3)
+                                        .bold()
+                                        .foregroundStyle(.white)
+                                    Text("Chain adjacent tiles to hit target sums and outsmart the board.")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.white.opacity(0.82))
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right.circle.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundStyle(.white.opacity(0.9))
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                            .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 18))
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding()
