@@ -42,9 +42,9 @@ GAME_PALETTE_32: Palette = [
     ("purple", (103, 58, 183)),
     ("hotpink", (255, 64, 129)),
     ("amber", (255, 152, 0)),
-    ("chestnut", (121, 85, 72)),
+    ("white", (250, 250, 250)),
     ("storm", (84, 110, 122)),
-    ("silver", (189, 189, 189)),
+    ("petalpink", (255, 167, 192)),
     ("darkgray", (66, 66, 66)),
     ("black", (0, 0, 0)),
 ]
@@ -131,6 +131,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", choices=["tonal", "fixed"], default="tonal", help="tonal keeps original hue and buckets shades")
     parser.add_argument("--palette-size", type=int, default=32, choices=[16, 32], help="Fixed palette size when mode=fixed")
     parser.add_argument("--buckets", type=int, default=6, help="Number of shade buckets when mode=tonal")
+    parser.add_argument("--alpha-threshold", type=int, default=40, help="Pixels below this alpha become transparent (-1)")
     parser.add_argument("--output", type=Path, help="Optional output file for generated snippet")
     return parser.parse_args()
 
@@ -147,22 +148,32 @@ def main() -> int:
         raise SystemExit(f"Input file not found: {args.input}")
 
     with Image.open(args.input) as img:
-        rgba = img.convert("RGBA")
-        white_bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
-        flattened = Image.alpha_composite(white_bg, rgba).convert("RGB")
-        resized = flattened.resize((args.width, args.height), Image.Resampling.LANCZOS)
-        pixels = list(resized.getdata())
+        rgba = img.convert("RGBA").resize((args.width, args.height), Image.Resampling.LANCZOS)
+        pixels_rgba = list(rgba.getdata())
+        solid_pixels = [(r, g, b) for r, g, b, a in pixels_rgba if a >= args.alpha_threshold]
 
     if args.mode == "fixed":
         palette = palette_for_size(args.palette_size)
         mode_desc = f"{args.palette_size} fixed buckets"
     else:
-        palette = tonal_palette_from_pixels(pixels, max(2, args.buckets))
+        palette = tonal_palette_from_pixels(solid_pixels or [(255, 255, 255)], max(2, args.buckets))
         mode_desc = f"{len(palette)} tonal buckets"
-    mapped = [nearest_palette_index(rgb, palette) for rgb in pixels]
+
+    mapped: List[int] = []
+    for r, g, b, a in pixels_rgba:
+        if a < args.alpha_threshold:
+            mapped.append(-1)
+            continue
+        alpha = a / 255.0
+        flattened_rgb = (
+            int((r * alpha) + (255 * (1 - alpha))),
+            int((g * alpha) + (255 * (1 - alpha))),
+            int((b * alpha) + (255 * (1 - alpha))),
+        )
+        mapped.append(nearest_palette_index(flattened_rgb, palette))
     rows = chunked(mapped, args.width)
 
-    used = sorted(set(mapped))
+    used = sorted({value for value in mapped if value >= 0})
     palette_preview = ", ".join(f"{i}:{palette[i][0]}" for i in used)
     snippet = template_snippet(args.id, args.name, args.width, args.height, rows)
 

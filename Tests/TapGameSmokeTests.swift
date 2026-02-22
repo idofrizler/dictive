@@ -6,6 +6,7 @@ struct TapGameSmokeTests {
         testInitialGalleryState()
         testSelectDrawingAndGridSize()
         testOnlyUsedColorsAreExposed()
+        testTransparentPixelsAreNotPaintable()
         testMatchAndMismatchScoring()
         testProgressPersistsAcrossGalleryNavigation()
         testColorSelectionResetsBetweenDrawings()
@@ -27,8 +28,8 @@ struct TapGameSmokeTests {
 
         game.selectDrawing(first.id)
         precondition(game.currentDrawingID == first.id, "Expected selected drawing ID")
-        precondition(game.totalCount >= 600, "Expected denser pixel grid")
-        precondition(game.currentGridWidth * game.currentGridHeight == game.totalCount, "Grid dimensions should match cell count")
+        precondition(game.cells.count >= 600, "Expected denser pixel grid")
+        precondition(game.currentGridWidth * game.currentGridHeight == game.cells.count, "Grid dimensions should match cell count")
     }
 
     private static func testOnlyUsedColorsAreExposed() {
@@ -39,8 +40,23 @@ struct TapGameSmokeTests {
         game.selectDrawing(first.id)
 
         let available = Set(game.availableColorIndices)
-        let usedByCells = Set(game.cells.map(\.targetColorIndex))
+        let usedByCells = Set(game.cells.map(\.targetColorIndex).filter { $0 >= 0 })
         precondition(available == usedByCells, "Palette should only show colors used by drawing")
+    }
+
+    private static func testTransparentPixelsAreNotPaintable() {
+        var game = TapGame()
+        guard let star = game.galleryItems.first(where: { $0.id == "star" }) else {
+            preconditionFailure("Expected star drawing")
+        }
+        game.selectDrawing(star.id)
+
+        guard let transparentCell = game.cells.first(where: { $0.targetColorIndex < 0 }) else {
+            preconditionFailure("Expected transparent background cells")
+        }
+        precondition(game.totalCount < game.cells.count, "Transparent cells should not count towards completion")
+        precondition(transparentCell.isPainted, "Transparent cells should be prepainted")
+        precondition(game.tapCell(transparentCell.id) == .alreadyPainted, "Transparent cells should be non-paintable")
     }
 
     private static func testMatchAndMismatchScoring() {
@@ -81,7 +97,9 @@ struct TapGameSmokeTests {
         let secondID = game.galleryItems[1].id
 
         game.selectDrawing(firstID)
-        let paintable = game.cells[0]
+        guard let paintable = game.cells.first(where: { $0.targetColorIndex >= 0 && !$0.isPainted }) else {
+            preconditionFailure("Expected paintable cell")
+        }
         game.selectColor(paintable.targetColorIndex)
         _ = game.tapCell(paintable.id)
         let paintedAfterTap = game.paintedCount
@@ -115,7 +133,9 @@ struct TapGameSmokeTests {
         }
         game.selectDrawing(firstID)
 
-        let target = game.cells[0]
+        guard let target = game.cells.first(where: { $0.targetColorIndex >= 0 && !$0.isPainted }) else {
+            preconditionFailure("Expected paintable target")
+        }
         game.selectColor(target.targetColorIndex)
         _ = game.tapCell(target.id)
         precondition(game.paintedCount == 1, "Expected one painted cell")

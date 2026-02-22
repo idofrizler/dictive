@@ -295,17 +295,32 @@ private struct BubbleColoringGameView: View {
     }
 
     private func colorForIndex(_ index: Int, drawingID: String?) -> Color {
-        paletteMap(for: drawingID)[index] ?? rgb(210, 210, 210)
+        paletteMap(for: drawingID)[index] ?? defaultPaletteColor(index)
     }
 
     private func thumbnailPalette(for item: DrawingGalleryItem) -> [Color] {
-        let indices = Array(Set(item.cells.map(\.targetColorIndex))).sorted()
+        let indices = Array(Set(item.cells.map(\.targetColorIndex).filter { $0 >= 0 })).sorted()
         let maxIndex = max(indices.max() ?? 0, 0)
         var palette = Array(repeating: rgb(210, 210, 210), count: maxIndex + 1)
         for index in indices {
             palette[index] = colorForIndex(index, drawingID: item.id)
         }
         return palette
+    }
+
+    private func defaultPaletteColor(_ index: Int) -> Color {
+        let colors: [Color] = [
+            rgb(230, 57, 70), rgb(244, 162, 97), rgb(233, 196, 106), rgb(76, 175, 80),
+            rgb(42, 157, 143), rgb(141, 110, 99), rgb(47, 47, 47), rgb(176, 190, 197),
+            rgb(33, 150, 243), rgb(63, 81, 181), rgb(156, 39, 176), rgb(233, 30, 99),
+            rgb(255, 112, 67), rgb(255, 235, 59), rgb(0, 150, 136), rgb(121, 85, 72),
+            rgb(96, 125, 139), rgb(158, 158, 158), rgb(69, 90, 100), rgb(255, 87, 34),
+            rgb(205, 220, 57), rgb(139, 195, 74), rgb(0, 188, 212), rgb(3, 169, 244),
+            rgb(103, 58, 183), rgb(255, 64, 129), rgb(255, 152, 0), rgb(250, 250, 250),
+            rgb(84, 110, 122), rgb(255, 167, 192), rgb(66, 66, 66), rgb(0, 0, 0)
+        ]
+        guard colors.indices.contains(index) else { return rgb(210, 210, 210) }
+        return colors[index]
     }
 
     private func paletteMap(for drawingID: String?) -> [Int: Color] {
@@ -391,7 +406,7 @@ private struct BubbleColoringGameView: View {
                         .fill(cellFill(for: cell))
                         .frame(width: cellSize, height: cellSize)
                         .overlay {
-                            if !cell.isPainted {
+                            if !cell.isPainted && cell.targetColorIndex >= 0 {
                                 Text("\(cell.targetColorIndex + 1)")
                                     .font(.system(size: max(7, cellSize * 0.25), weight: .semibold))
                                     .foregroundStyle(cell.targetColorIndex == session.game.selectedColorIndex ? .primary : .secondary)
@@ -419,6 +434,9 @@ private struct BubbleColoringGameView: View {
     }
 
     private func cellFill(for cell: BubbleCell) -> Color {
+        if cell.targetColorIndex < 0 {
+            return .white.opacity(0.94)
+        }
         if cell.isPainted {
             return colorForIndex(cell.targetColorIndex)
         }
@@ -508,7 +526,7 @@ private struct PixelThumbnailView: View {
             LazyVGrid(columns: columns, spacing: 0) {
                 ForEach(cells) { cell in
                     Rectangle()
-                        .fill(cell.isPainted ? palette[cell.targetColorIndex] : Color.white.opacity(0.85))
+                        .fill(cell.isPainted && cell.targetColorIndex >= 0 ? palette[cell.targetColorIndex] : Color.white.opacity(0.85))
                         .frame(width: cellSize, height: cellSize)
                 }
             }
